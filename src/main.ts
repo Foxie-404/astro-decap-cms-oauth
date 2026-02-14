@@ -112,19 +112,6 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                         return;
                     }
 
-                    env.schema!.PUBLIC_DECAP_CMS_SRC_URL = envField.string({
-                        context: "client",
-                        access: "public",
-                        optional: true,
-                        default: decapCMSSrcUrl,
-                    });
-                    env.schema!.PUBLIC_DECAP_CMS_VERSION = envField.string({
-                        context: "client",
-                        access: "public",
-                        optional: true,
-                        default: decapCMSVersion,
-                    });
-
                     // mount DecapCMS admin route
                     injectRoute({
                         pattern: adminRoute,
@@ -181,7 +168,11 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                                 },
                                 load(id) {
                                     if (id === "\0virtual:decap-cms-config") {
-                                        return `export const configYaml = ${JSON.stringify(validatedConfigYaml)};`;
+                                        return `
+                                            export const configYaml = ${JSON.stringify(validatedConfigYaml)};
+                                            export const decapCMSSrcUrl = ${JSON.stringify(decapCMSSrcUrl)};
+                                            export const decapCMSVersion = ${JSON.stringify(decapCMSVersion)};
+                                        `;
                                     }
                                 },
                             },
