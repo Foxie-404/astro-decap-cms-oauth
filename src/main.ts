@@ -12,7 +12,7 @@ export interface DecapCMSOptions {
     decapCMSVersion?: string;
     adminDisabled?: boolean;
     adminRoute?: string;
-    enable?: boolean;
+    oauthDisabled?: boolean;
     oauthLoginRoute?: string;
     oauthCallbackRoute?: string;
 }
@@ -22,7 +22,7 @@ const defaultOptions: DecapCMSOptions = {
     decapCMSVersion: "3.3.3",
     adminDisabled: false,
     adminRoute: "/admin",
-    enable: true,
+    oauthDisabled: false,
     oauthLoginRoute: "/oauth",
     oauthCallbackRoute: "/oauth/callback",
 };
@@ -54,7 +54,7 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
         decapCMSVersion,
         adminDisabled,
         adminRoute,
-        enable,
+        oauthDisabled,
         oauthLoginRoute,
         oauthCallbackRoute,
     } = {
@@ -67,7 +67,7 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
     }
 
     return {
-        name: "decap-cms-oauth-astro",
+        name: "astro-decap-cms-oauth",
         hooks: {
             "astro:config:setup": async ({ injectRoute, updateConfig, config }) => {
                 const env: AstroConfig["env"] = { validateSecrets: true, schema: {} };
@@ -112,20 +112,33 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                         return;
                     }
 
+                    env.schema!.PUBLIC_DECAP_CMS_SRC_URL = envField.string({
+                        context: "client",
+                        access: "public",
+                        optional: true,
+                        default: decapCMSSrcUrl,
+                    });
+                    env.schema!.PUBLIC_DECAP_CMS_VERSION = envField.string({
+                        context: "client",
+                        access: "public",
+                        optional: true,
+                        default: decapCMSVersion,
+                    });
+
                     // mount DecapCMS admin route
                     injectRoute({
                         pattern: adminRoute,
-                        entrypoint: "decap-cms-oauth-astro/src/admin.astro",
+                        entrypoint: "astro-decap-cms-oauth/src/admin.astro",
                     });
 
                     // mount DecapCMS config route
                     injectRoute({
                         pattern: `${adminRoute}/config.yml`,
-                        entrypoint: "decap-cms-oauth-astro/src/config.ts",
+                        entrypoint: "astro-decap-cms-oauth/src/config.ts",
                     });
                 }
 
-                if (enable) {
+                if (!oauthDisabled) {
                     env.schema!.OAUTH_GITHUB_CLIENT_ID = envField.string({
                         context: "server",
                         access: "secret",
@@ -144,13 +157,13 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                     // mount OAuth backend - sign in route
                     injectRoute({
                         pattern: oauthLoginRoute,
-                        entrypoint: "decap-cms-oauth-astro/src/oauth/index.ts",
+                        entrypoint: "astro-decap-cms-oauth/src/oauth/index.ts",
                     });
 
                     // mount OAuth backend - callback route
                     injectRoute({
                         pattern: oauthCallbackRoute,
-                        entrypoint: "decap-cms-oauth-astro/src/oauth/callback.ts",
+                        entrypoint: "astro-decap-cms-oauth/src/oauth/callback.ts",
                     });
                 }
 
@@ -168,11 +181,7 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                                 },
                                 load(id) {
                                     if (id === "\0virtual:decap-cms-config") {
-                                        return `
-                                            export const configYaml = ${JSON.stringify(validatedConfigYaml)};
-                                            export const decapCMSSrcUrl = ${JSON.stringify(decapCMSSrcUrl)};
-                                            export const decapCMSVersion = ${JSON.stringify(decapCMSVersion)};
-                                        `;
+                                        return `export const configYaml = ${JSON.stringify(validatedConfigYaml)};`;
                                     }
                                 },
                             },
