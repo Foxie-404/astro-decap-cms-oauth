@@ -83,14 +83,15 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                 if (!adminDisabled) {
                     // Resolve config path
                     const rootDir = fileURLToPath(config.root);
-                    let absoluteConfigPath = path.resolve(rootDir, configPath!);
+                    const effectiveConfigPath = configPath ?? defaultOptions.configPath!;
+                    let absoluteConfigPath = path.resolve(rootDir, effectiveConfigPath);
 
                     if (!(await fsPromises.access(absoluteConfigPath).then(() => true).catch(() => false))) {
                         const fallbackPath = path.resolve(rootDir, "public/admin/config.yml");
                         if (await fsPromises.access(fallbackPath).then(() => true).catch(() => false)) {
                             absoluteConfigPath = fallbackPath;
                         } else {
-                            throw new Error(`Decap CMS config file not found at ${configPath} or ${fallbackPath}`);
+                            throw new Error(`Decap CMS config file not found at ${effectiveConfigPath} or ${fallbackPath}`);
                         }
                     }
 
