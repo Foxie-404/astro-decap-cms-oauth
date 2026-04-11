@@ -1,6 +1,6 @@
 import type { AstroConfig, AstroIntegration } from "astro";
 import { envField } from "astro/config";
-import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
@@ -85,9 +85,9 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                     const rootDir = fileURLToPath(config.root);
                     let absoluteConfigPath = path.resolve(rootDir, configPath!);
 
-                    if (!fs.existsSync(absoluteConfigPath)) {
+                    if (!(await fsPromises.access(absoluteConfigPath).then(() => true).catch(() => false))) {
                         const fallbackPath = path.resolve(rootDir, "public/admin/config.yml");
-                        if (fs.existsSync(fallbackPath)) {
+                        if (await fsPromises.access(fallbackPath).then(() => true).catch(() => false)) {
                             absoluteConfigPath = fallbackPath;
                         } else {
                             throw new Error(`Decap CMS config file not found at ${configPath} or ${fallbackPath}`);
@@ -96,7 +96,7 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
 
                     // Read and validate config
                     try {
-                        const fileContent = fs.readFileSync(absoluteConfigPath, "utf8");
+                        const fileContent = await fsPromises.readFile(absoluteConfigPath, "utf8");
                         const rawConfig = yaml.load(fileContent);
                         if (
                             typeof rawConfig !== "object" ||
