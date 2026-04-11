@@ -73,6 +73,7 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                 const env: AstroConfig["env"] = { validateSecrets: true, schema: {} };
 
                 let validatedConfigYaml = "";
+                let adminSetupFailed = false;
 
                 if (!adminDisabled) {
                     // Resolve config path
@@ -95,47 +96,49 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
 
                         if (!parsedConfig.backend || !parsedConfig.collections) {
                             console.error("Decap CMS configuration is missing required fields: 'backend' or 'collections'. Admin dashboard will be disabled.");
-                            return;
-                        }
-
-                        // Whitelist filtering
-                        const filteredConfig: Record<string, any> = {};
-                        for (const key of WHITELIST) {
-                            if (key in parsedConfig) {
-                                filteredConfig[key] = parsedConfig[key];
+                            adminSetupFailed = true;
+                        } else {
+                            // Whitelist filtering
+                            const filteredConfig: Record<string, any> = {};
+                            for (const key of WHITELIST) {
+                                if (key in parsedConfig) {
+                                    filteredConfig[key] = parsedConfig[key];
+                                }
                             }
-                        }
 
-                        validatedConfigYaml = yaml.dump(filteredConfig);
+                            validatedConfigYaml = yaml.dump(filteredConfig);
+                        }
                     } catch (e) {
                         console.error(`Failed to parse Decap CMS config: ${e}`);
-                        return;
+                        adminSetupFailed = true;
                     }
 
-                    env.schema!.PUBLIC_DECAP_CMS_SRC_URL = envField.string({
-                        context: "client",
-                        access: "public",
-                        optional: true,
-                        default: decapCMSSrcUrl,
-                    });
-                    env.schema!.PUBLIC_DECAP_CMS_VERSION = envField.string({
-                        context: "client",
-                        access: "public",
-                        optional: true,
-                        default: decapCMSVersion,
-                    });
+                    if (!adminSetupFailed) {
+                        env.schema!.PUBLIC_DECAP_CMS_SRC_URL = envField.string({
+                            context: "client",
+                            access: "public",
+                            optional: true,
+                            default: decapCMSSrcUrl,
+                        });
+                        env.schema!.PUBLIC_DECAP_CMS_VERSION = envField.string({
+                            context: "client",
+                            access: "public",
+                            optional: true,
+                            default: decapCMSVersion,
+                        });
 
-                    // mount DecapCMS admin route
-                    injectRoute({
-                        pattern: adminRoute,
-                        entrypoint: "astro-decap-cms-oauth/src/admin.astro",
-                    });
+                        // mount DecapCMS admin route
+                        injectRoute({
+                            pattern: adminRoute,
+                            entrypoint: "astro-decap-cms-oauth/src/admin.astro",
+                        });
 
-                    // mount DecapCMS config route
-                    injectRoute({
-                        pattern: `${adminRoute}/config.yml`,
-                        entrypoint: "astro-decap-cms-oauth/src/config.ts",
-                    });
+                        // mount DecapCMS config route
+                        injectRoute({
+                            pattern: `${adminRoute}/config.yml`,
+                            entrypoint: "astro-decap-cms-oauth/src/config.ts",
+                        });
+                    }
                 }
 
                 if (!oauthDisabled) {
