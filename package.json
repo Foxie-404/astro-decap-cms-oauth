@@ -34,7 +34,8 @@
     },
     "./src/oauth/callback.ts": "./src/oauth/callback.ts",
     "./src/oauth/index.ts": "./src/oauth/index.ts",
-    "./src/admin.astro": "./src/admin.astro"
+    "./src/admin.astro": "./src/admin.astro",
+    "./src/config.ts": "./src/config.ts"
   },
   "scripts": {
     "dev": "vite build --watch",
