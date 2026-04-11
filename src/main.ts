@@ -92,21 +92,31 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
                     // Read and validate config
                     try {
                         const fileContent = fs.readFileSync(absoluteConfigPath, "utf8");
-                        const parsedConfig = yaml.load(fileContent) as Record<string, any>;
-
-                        if (!parsedConfig.backend || !parsedConfig.collections) {
-                            console.error("Decap CMS configuration is missing required fields: 'backend' or 'collections'. Admin dashboard will be disabled.");
+                        const rawConfig = yaml.load(fileContent);
+                        if (
+                            typeof rawConfig !== "object" ||
+                            rawConfig === null ||
+                            Array.isArray(rawConfig)
+                        ) {
+                            console.error("Decap CMS configuration must be a YAML object.");
                             adminSetupFailed = true;
                         } else {
-                            // Whitelist filtering
-                            const filteredConfig: Record<string, any> = {};
-                            for (const key of WHITELIST) {
-                                if (key in parsedConfig) {
-                                    filteredConfig[key] = parsedConfig[key];
-                                }
-                            }
+                            const parsedConfig = rawConfig as Record<string, any>;
 
-                            validatedConfigYaml = yaml.dump(filteredConfig);
+                            if (!parsedConfig.backend || !parsedConfig.collections) {
+                                console.error("Decap CMS configuration is missing required fields: 'backend' or 'collections'. Admin dashboard will be disabled.");
+                                adminSetupFailed = true;
+                            } else {
+                                // Whitelist filtering
+                                const filteredConfig: Record<string, any> = {};
+                                for (const key of WHITELIST) {
+                                    if (key in parsedConfig) {
+                                        filteredConfig[key] = parsedConfig[key];
+                                    }
+                                }
+
+                                validatedConfigYaml = yaml.dump(filteredConfig);
+                            }
                         }
                     } catch (e) {
                         console.error(`Failed to parse Decap CMS config: ${e}`);
