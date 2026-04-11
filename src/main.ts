@@ -66,6 +66,11 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
         throw new Error('`adminRoute`, `oauthLoginRoute` and `oauthCallbackRoute` options must start with "/"');
     }
 
+    const normalizedAdminRoute =
+        adminRoute && adminRoute.endsWith("/")
+            ? adminRoute.replace(/\/+$/, "")
+            : adminRoute;
+
     return {
         name: "astro-decap-cms-oauth",
         hooks: {
@@ -139,13 +144,13 @@ export default function decapCMS(options: DecapCMSOptions = {}): AstroIntegratio
 
                         // mount DecapCMS admin route
                         injectRoute({
-                            pattern: adminRoute,
+                            pattern: normalizedAdminRoute,
                             entrypoint: "astro-decap-cms-oauth/src/admin.astro",
                         });
 
                         // mount DecapCMS config route
                         injectRoute({
-                            pattern: `${adminRoute}/config.yml`,
+                            pattern: `${normalizedAdminRoute}/config.yml`,
                             entrypoint: "astro-decap-cms-oauth/src/config.ts",
                         });
                     }
